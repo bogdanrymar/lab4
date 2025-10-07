@@ -1,6 +1,7 @@
 joblib
 keras
 matplotlib
+nltk
 numpy
 pandas
 scikit-learn
