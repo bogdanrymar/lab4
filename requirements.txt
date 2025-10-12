@@ -1,8 +1,11 @@
+notebook
+
 joblib
 keras
 matplotlib
 numpy
 pandas
+pandas-stubs
 scikit-learn
 seaborn
 tensorflow
