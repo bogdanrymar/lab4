@@ -7,9 +7,9 @@ from keras.models import load_model
 # Load previously dumped model, scaler, and column definitions
 @st.cache_resource
 def load_resources():
-    model = load_model("../lab1/diamonds.keras")
-    scaler = joblib.load("../lab1/scaler.pkl")
-    columns = joblib.load("../lab1/columns.pkl")
+    model = load_model("lab1/diamonds.keras")
+    scaler = joblib.load("lab1/scaler.pkl")
+    columns = joblib.load("lab1/columns.pkl")
     return model, scaler, columns
 
 
