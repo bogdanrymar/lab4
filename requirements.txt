@@ -1,8 +1,7 @@
-notebook
-
 joblib
 keras
 matplotlib
+notebook
 numpy
 pandas
 pandas-stubs
@@ -22,3 +21,5 @@ rouge_score
 sentencepiece
 tf-keras
 torch
+
+streamlit
