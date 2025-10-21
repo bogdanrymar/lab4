@@ -1,71 +1,83 @@
 import os
-
 import joblib
 import pandas as pd
 import streamlit as st
 from keras.models import load_model
 
 
-# Load previously dumped model, scaler, and column definitions
+# === Load model, scaler, and column definitions ===
 @st.cache_resource
 def load_resources():
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    model = load_model(os.path.join(BASE_DIR, "diamonds.keras"))
-    scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
-    columns = joblib.load(os.path.join(BASE_DIR, "columns.pkl"))
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(base_dir, "diamonds.keras")
+    scaler_path = os.path.join(base_dir, "scaler.pkl")
+    columns_path = os.path.join(base_dir, "columns.pkl")
+
+    model = load_model(model_path)
+    scaler = joblib.load(scaler_path)
+    columns = joblib.load(columns_path)
+
     return model, scaler, columns
 
 
-model, scaler, columns = load_resources()
-categorical_features = ['cut', 'color', 'clarity']
-numeric_features = ['carat', 'x', 'y', 'z']
+model, scaler, feature_columns = load_resources()
+
+# === Define feature types ===
+categorical_features = ["cut", "color", "clarity"]
+numerical_features = ["carat", "x", "y", "z"]
 
 
-def get_column_categories(name: str):
-    return [value.split("_")[1] for value in columns.values if value.startswith(name + "_")]
+def get_category_options(prefix: str):
+    """Return possible category values for a given prefix (e.g. 'cut')."""
+    return [col.split("_")[1] for col in feature_columns if col.startswith(prefix + "_")]
 
 
-cut_choices = get_column_categories("cut")
-color_choices = get_column_categories("color")
-clarity_choices = get_column_categories("clarity")
+# === UI section ===
+st.title("💎 Diamond Price Prediction")
+st.header("Diamond Parameters")
 
-st.title("Передбачення вартості діамантів")
-st.header("Параметри діамантів")
-carat = st.slider("Карати (carat)", min_value=0.2, max_value=1.22, value=0.58, step=0.01)
-cut = st.select_slider("Огранювання (cut)", options=cut_choices)
-color = st.select_slider("Колір (color)", options=color_choices)
-clarity = st.select_slider("Прозорість (claity)", options=clarity_choices)
-st.header("Dimensions📐")
-x = st.slider("X", min_value=3.73, max_value=6.89, value=5.25, step=0.01)
-y = st.slider("Y", min_value=3.68, max_value=6.77, value=5.25, step=0.01)
-z = st.slider("Z", min_value=1.07, max_value=3.62, value=3.23, step=0.01)
+carat_value = st.slider("Carat weight", min_value=0.2, max_value=1.51, value=0.55, step=0.01)
+cut_value = st.select_slider("Cut quality", options=get_category_options("cut"))
+color_value = st.select_slider("Color grade", options=get_category_options("color"))
+clarity_value = st.select_slider("Clarity", options=get_category_options("clarity"))
+
+st.header("Dimensions (mm)")
+x_value = st.slider("Length (X)", min_value=3.0, max_value=7.0, value=5.0, step=0.01)
+y_value = st.slider("Width (Y)", min_value=3.0, max_value=7.0, value=5.0, step=0.01)
+z_value = st.slider("Depth (Z)", min_value=1.0, max_value=4.0, value=3.0, step=0.01)
 
 
 def preprocess_input():
-    df = pd.DataFrame({
-        'carat': [carat],
-        'cut': [cut],
-        'color': [color],
-        'clarity': [clarity],
-        'x': [x],
-        'y': [y],
-        'z': [z],
+    """Prepare input data for model prediction."""
+    input_df = pd.DataFrame({
+        "carat": [carat_value],
+        "cut": [cut_value],
+        "color": [color_value],
+        "clarity": [clarity_value],
+        "x": [x_value],
+        "y": [y_value],
+        "z": [z_value],
     })
-    # One-hot encoding of categorical variables
-    df = pd.get_dummies(df, columns=categorical_features)
-    # Add missing columns that exist in X_train but not in new_data
-    for col in columns:
-        if col not in df.columns:
-            df[col] = 0
+
+    # One-hot encode categorical features
+    input_df = pd.get_dummies(input_df, columns=categorical_features)
+
+    # Add any missing columns (present in training data but absent in input)
+    for col in feature_columns:
+        if col not in input_df.columns:
+            input_df[col] = 0
+
     # Reorder columns to match training data
-    df = df[columns]
-    # Normalize numeric features (using the same scaler from training)
-    df[numeric_features] = scaler.transform(df[numeric_features])
-    return df
+    input_df = input_df[feature_columns]
+
+    # Normalize numerical features
+    input_df[numerical_features] = scaler.transform(input_df[numerical_features])
+
+    return input_df
 
 
-# Run whenever some feature is changed
-if any([carat, cut, color, clarity, x, y, z]):
-    inputs = preprocess_input()
-    predictions = model.predict(inputs)
-    st.success(f"Орієнтовна ціна діаманту (price): **${predictions[0][0]:.2f}**")
+# === Prediction section ===
+if any([carat_value, cut_value, color_value, clarity_value, x_value, y_value, z_value]):
+    input_data = preprocess_input()
+    predicted_price = model.predict(input_data)
+    st.success(f"💰 Estimated Diamond Price: **${predicted_price[0][0]:.2f}**")
