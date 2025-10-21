@@ -1,3 +1,5 @@
+import os
+
 import joblib
 import pandas as pd
 import streamlit as st
@@ -7,9 +9,10 @@ from keras.models import load_model
 # Load previously dumped model, scaler, and column definitions
 @st.cache_resource
 def load_resources():
-    model = load_model("lab1/diamonds.keras")
-    scaler = joblib.load("lab1/scaler.pkl")
-    columns = joblib.load("lab1/columns.pkl")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    model = load_model(os.path.join(BASE_DIR, "diamonds.keras"))
+    scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
+    columns = joblib.load(os.path.join(BASE_DIR, "columns.pkl"))
     return model, scaler, columns
 
 
